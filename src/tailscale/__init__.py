@@ -4,14 +4,27 @@ from .exceptions import (
     TailscaleConnectionError,
     TailscaleError,
 )
-from .models import ClientConnectivity, ClientSupports, Device, Devices
+from .models import (
+    AuthKey,
+    AuthKeyRequest,
+    AuthKeys,
+    ClientConnectivity,
+    ClientSupports,
+    Device,
+    Devices,
+    KeyAttributes,
+)
 from .tailscale import Tailscale
 
 __all__ = [
+    "AuthKey",
+    "AuthKeyRequest",
+    "AuthKeys",
     "ClientConnectivity",
     "ClientSupports",
     "Device",
     "Devices",
+    "KeyAttributes",
     "Tailscale",
     "TailscaleAuthenticationError",
     "TailscaleConnectionError",

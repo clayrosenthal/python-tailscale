@@ -26,7 +26,6 @@ from .models import (
     Devices,
     KeyAttributes,
     KeyCapabilities,
-    Policy,
 )
 
 
@@ -171,39 +170,6 @@ class Tailscale:
         response_data: dict[str, Any] = await response.json(content_type=None)
         return response_data
 
-    async def policy(self, details: bool = False) -> Policy:
-        """Get policy/acl information from the Tailscale API.
-
-        Args:
-            details: Whether to include extra details in the response.
-                will include the following:
-                - tailnet policy file:
-                    a base64-encoded string representation of the huJSON format
-                - warnings:
-                    array of strings for syntactically valid but nonsensical entries
-                - errors:
-                    an array of strings for parsing failures
-
-        Returns:
-            Returns a model of the Tailscale policy.
-        """
-        data = await self._get(
-            f"tailnet/{self.tailnet}/acl{'?details=1' if details else ''}"
-        )
-        return Policy.parse_obj(data)
-
-    async def update_policy(self, policy: Policy) -> Policy:
-        """Get policy/acl information from the Tailscale API.
-
-        Args:
-            policy: The new policy to put in place.
-
-        Returns:
-            Returns the updated policy.
-        """
-        data = await self._post(f"tailnet/{self.tailnet}/acl", data=policy.dict())
-        return Policy.parse_obj(data)
-
     async def devices(self, all_fields: bool = True) -> dict[str, Device]:
         """Get devices information from the Tailscale API.
 
@@ -217,49 +183,6 @@ class Tailscale:
             f"tailnet/{self.tailnet}/devices{'?fields=all' if all_fields else ''}"
         )
         return Devices.parse_obj(data).devices
-
-    async def device(self, device_id: str, all_fields: bool = True) -> Device:
-        """Get devices information from the Tailscale API.
-
-        Args:
-            device_id: The id of the device to get.
-            all_fields: Whether to include all fields in the response.
-
-        Returns:
-            Returns a model of the Tailscale device.
-        """
-        data = await self._get(
-            f"device/{device_id}{'?fields=all' if all_fields else ''}"
-        )
-        return Device.parse_obj(data)
-
-    async def delete_device(self, device_id: str) -> None:
-        """Delete device from the Tailscale API.
-
-        Args:
-            device_id: The id of the device to delete.
-        """
-        await self._delete(f"device/{device_id}")
-
-    async def authorize_device(self, device_id: str, authorized: bool = True) -> None:
-        """Get devices information from the Tailscale API.
-
-        Args:
-            device_id: The id of the device to authorize.
-            authorized: Whether to authorize or deauthorize the device.
-        """
-        await self._post(
-            f"device/{device_id}/authorized", data={"authorized": authorized}
-        )
-
-    async def tag_device(self, device_id: str, tags: List[str]) -> None:
-        """Tag device with the Tailscale API.
-
-        Args:
-            device_id: The id of the device to tag.
-            tags: The tags to add to the device. Each entry must start with 'tag:'.
-        """
-        await self._post(f"device/{device_id}/tags", data={"tags": tags})
 
     async def keys(self) -> List[str]:
         """Alias for list_keys.
@@ -303,6 +226,7 @@ class Tailscale:
 
     async def create_auth_key(
         self,
+        *,
         request: Optional[AuthKeyRequest] = None,
         expiry_seconds: int = 86400,
         tags: Optional[List[str]] = None,
