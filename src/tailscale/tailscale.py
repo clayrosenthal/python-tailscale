@@ -5,7 +5,7 @@ import asyncio
 import socket
 from dataclasses import dataclass
 from importlib import metadata
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import async_timeout
 from aiohttp import BasicAuth
@@ -218,10 +218,10 @@ class Tailscale:
                 "Error occurred while communicating with the Tailscale API"
             ) from exception
 
-        response_data: dict[str, Any] = await response.json(content_type=None)
+        response_data: Dict[str, Any] = await response.json(content_type=None)
         return response_data
 
-    async def devices(self, all_fields: bool = True) -> dict[str, Device]:
+    async def devices(self, all_fields: bool = True) -> Dict[str, Device]:
         """Get devices information from the Tailscale API.
 
         Args:
