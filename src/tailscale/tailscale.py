@@ -61,6 +61,9 @@ class Tailscale:
                 "oauth_client_secret) is required",
             )
         if not self.api_key:
+            # set the api_key to a placeholder value so that the
+            # _get_oauth_token method can set it to the actual value
+            self.api_key = "pending"  # nosec
             self.api_key = await self._get_oauth_token()
 
     async def _get_oauth_token(self) -> str:
@@ -73,7 +76,7 @@ class Tailscale:
             "client_id": self.oauth_client_id,
             "client_secret": self.oauth_client_secret,
         }
-        response = await self._get("oauth/token", data=data)
+        response = await self._get("oauth/token", data=data, use_auth_key=False)
 
         return response.get("access_token", "")
 
@@ -82,19 +85,23 @@ class Tailscale:
         uri: str,
         *,
         data: dict[str, Any] | None = None,
+        use_auth_key: bool = True,
     ) -> dict[str, Any]:
         """Make a POST request to the Tailscale API.
 
         Args:
             uri: Request URI, without '/api/v2/'.
             data: Dictionary of data to send to the Tailscale API.
+            use_auth_key: Whether to use the API key or not.
 
         Returns:
             A Python dictionary (JSON decoded) with the response from
             the Tailscale API.
 
         """
-        return await self._request(uri, method=METH_POST, data=data)
+        return await self._request(
+            uri, method=METH_POST, data=data, use_auth_key=use_auth_key
+        )
 
     async def _delete(
         self,
@@ -119,18 +126,22 @@ class Tailscale:
         uri: str,
         *,
         data: dict[str, Any] | None = None,
+        use_auth_key: bool = True,
     ) -> dict[str, Any]:
         """Make a GET request to the Tailscale API.
 
         Args:
             uri: Request URI, without '/api/v2/'.
             data: Dictionary of data to send to the Tailscale API.
+            use_auth_key: Whether to use the API key or not.
 
         Returns:
             A Python dictionary (JSON decoded) with the response from
             the Tailscale API.
         """
-        return await self._request(uri, method=METH_GET, data=data)
+        return await self._request(
+            uri, method=METH_GET, data=data, use_auth_key=use_auth_key
+        )
 
     async def _request(
         self,
@@ -138,6 +149,7 @@ class Tailscale:
         *,
         method: str = METH_GET,
         data: dict[str, Any] | None = None,
+        use_auth_key: bool = True,
     ) -> dict[str, Any]:
         """Handle a request to the Tailscale API.
 
@@ -148,6 +160,7 @@ class Tailscale:
             uri: Request URI, without '/api/v2/'.
             method: HTTP Method to use.
             data: Dictionary of data to send to the Tailscale API.
+            use_auth_key: Whether to use the API key or not.
 
         Returns:
             A Python dictionary (JSON decoded) with the response from
@@ -175,11 +188,12 @@ class Tailscale:
 
         try:
             async with async_timeout.timeout(self.request_timeout):
+                auth = BasicAuth(self.api_key) if use_auth_key else None
                 response = await self.session.request(
                     method,
                     url,
                     json=data,
-                    auth=BasicAuth(self.api_key),
+                    auth=auth,
                     headers=headers,
                 )
                 response.raise_for_status()
