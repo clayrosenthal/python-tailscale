@@ -33,13 +33,49 @@ from .models import (
 class Tailscale:
     """Main class for handling connections with the Tailscale API."""
 
-    api_key: str
-    tailnet: str = "-"  # default tailnet of api key
+    api_key: str = ""  # nosec
+    # '-' used in a URI will assume default tailnet of api key
+    tailnet: str = "-"
+    oauth_client_id: str = ""  # nosec
+    oauth_client_secret: str = ""  # nosec
 
     request_timeout: int = 8
     session: ClientSession | None = None
 
     _close_session: bool = False
+
+    async def _check_access(self) -> None:
+        """Initialize the Tailscale client.
+
+        Raises:
+            ValueError: when neither api_key nor oauth_client_id and
+                oauth_client_secret are provided.
+        """
+        if (
+            not self.api_key  # noqa: W503
+            and not self.oauth_client_id  # noqa: W503
+            and not self.oauth_client_secret  # noqa: W503
+        ):
+            raise ValueError(
+                "Either api_key or (oauth_client_id and ",
+                "oauth_client_secret) is required",
+            )
+        if not self.api_key:
+            self.api_key = await self._get_oauth_token()
+
+    async def _get_oauth_token(self) -> str:
+        """Get an OAuth token from the Tailscale API.
+
+        Returns:
+            A string with the OAuth token.
+        """
+        data = {
+            "client_id": self.oauth_client_id,
+            "client_secret": self.oauth_client_secret,
+        }
+        response = await self._get("oauth/token", data=data)
+
+        return response.get("access_token", "")
 
     async def _post(
         self,
@@ -135,6 +171,7 @@ class Tailscale:
         if self.session is None:
             self.session = ClientSession()
             self._close_session = True
+        await self._check_access()
 
         try:
             async with async_timeout.timeout(self.request_timeout):

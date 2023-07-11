@@ -100,6 +100,8 @@ manually, using the following command:
 
 ```bash
 poetry run pre-commit run --all-files
+# optionally, to have pre-commit checks run before each commit:
+pre-commit install
 ```
 
 To run just the Python tests:
