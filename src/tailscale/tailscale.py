@@ -209,14 +209,14 @@ class Tailscale:
             ) from exception
         except ClientResponseError as exception:
             if exception.status in [401, 403]:
-                raise TailscaleAuthenticationError( #TODO: test this
+                raise TailscaleAuthenticationError(
                     "Authentication to the Tailscale API failed"
                 ) from exception
             raise TailscaleError(
                 "Error occurred while connecting to the Tailscale API: ",
                 f"{exception.message}",
             ) from exception
-        except (
+        except ( # raise_for_status always raises a ClientResponseError, not sure this will be hit
             ClientError,
             socket.gaierror,
         ) as exception:
@@ -243,7 +243,7 @@ class Tailscale:
         Returns:
             Returns a model of the Tailscale policy.
         """
-        data = await self._get( #TODO: test this
+        data = await self._get(
             f"tailnet/{self.tailnet}/acl{'?details=1' if details else ''}"
         )
         return Policy.parse_obj(data)
@@ -356,13 +356,16 @@ class Tailscale:
         data = await self._get(f"tailnet/{self.tailnet}/keys/{key_id}")
         return AuthKey.parse_obj(data)
 
-    async def delete_key(self, key_id: str) -> None:
+    async def delete_key(self, key_id: str) -> bool:
         """Delete key from the Tailscale API.
 
         Args:
             key_id: The id of the key to delete.
+        Returns:
+            whether the key was deleted or not.
         """
-        await self._delete(f"tailnet/{self.tailnet}/keys/{key_id}") #TODO: test this
+        resp = await self._delete(f"tailnet/{self.tailnet}/keys/{key_id}")
+        return resp is None
 
     async def create_auth_key(
         self,

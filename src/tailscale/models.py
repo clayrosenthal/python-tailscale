@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
+from base64 import b64decode
 
 from pydantic import BaseModel, Field, validator
 
@@ -172,6 +173,21 @@ class Policy(BaseModel):
     randomize_client_port: Optional[bool] = Field(alias="randomizeClientPort")
     one_cg_nat_route: Optional[str] = Field(alias="OneCGNATRoute")
 
+
+class PolicyDetails(BaseModel):
+    """Object holding Tailscale policy information."""
+
+    acl: Policy
+    warnings: List[str] = Field(default_factory=list)
+    errors: List[str] = Field(default_factory=list)
+
+    @validator("acl", pre=True)
+    @classmethod
+    def convert_to_policy(
+        cls, data: Dict[str, Any]  # noqa: F841
+    ) -> Policy:
+        decoded = b64decode(data)
+        return Policy.parse_obj(decoded)
 
 class KeyAttributes(BaseModel):
     """Object describing Tailscale key capabilities."""

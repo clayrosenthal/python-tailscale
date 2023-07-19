@@ -36,6 +36,7 @@ test_authkeys = {
 
 @pytest.mark.asyncio
 async def test_key_get(aresponses: ResponsesMockServer):
+    """Test the get key response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/tailnet/frenck/keys/test",
@@ -52,10 +53,13 @@ async def test_key_get(aresponses: ResponsesMockServer):
         key = await tailscale.get_key("test")
         assert isinstance(key, AuthKey)
         assert key.key_id == "test"
+    
+    aresponses.assert_plan_strictly_followed()
 
 
 @pytest.mark.asyncio
 async def test_keys_get(aresponses: ResponsesMockServer):
+    """Test the list keys response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/tailnet/frenck/keys",
@@ -73,3 +77,24 @@ async def test_keys_get(aresponses: ResponsesMockServer):
         assert isinstance(ts_keys, Dict)
         assert len(ts_keys.keys()) == 2
         assert ts_keys.pop("kjkdshCNTRL") == "information about key"
+
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.asyncio
+async def test_key_delete(aresponses: ResponsesMockServer):
+    """Test the delete key response handling."""
+    aresponses.add(
+        "api.tailscale.com",
+        "/api/v2/tailnet/frenck/keys/test",
+        "DELETE",
+        aresponses.Response(
+            status=200,
+        ),
+    )
+
+    async with aiohttp.ClientSession() as session:
+        tailscale = Tailscale(tailnet="frenck", api_key="abc", session=session) 
+        assert await tailscale.delete_key("test")
+        
+    aresponses.assert_plan_strictly_followed()
