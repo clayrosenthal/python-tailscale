@@ -144,7 +144,7 @@ repos:
         name: 🆎 Static type checking using pyright
         language: system
         types: [python]
-        entry: npm run pyright
+        entry: npm run pyright --venvpath $(poetry env info -p)
         pass_filenames: false
       - id: pytest
         name: 🧪 Running tests and test coverage with pytest
