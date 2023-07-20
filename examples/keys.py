@@ -6,11 +6,11 @@ import os
 
 from tailscale import Tailscale
 
-
 API_KEY = os.environ.get("TS_API_KEY", "tskey-somethingsomething")
-TAILNET = os.environ.get("TS_TAILNET", "-") # "-" is the default tailnet of the API key
+TAILNET = os.environ.get("TS_TAILNET", "-")  # "-" is the default tailnet of the API key
 OAUTH_CLIENT_ID = os.environ.get("TS_API_CLIENT_ID", "")
 OAUTH_CLIENT_SECRET = os.environ.get("TS_API_CLIENT_SECRET", "")
+
 
 async def main() -> None:
     """Show example on using the Tailscale API client."""
@@ -21,10 +21,10 @@ async def main() -> None:
         oauth_client_secret=OAUTH_CLIENT_SECRET,
     ) as tailscale:
 
-        keys = await tailscale.keys()
-        print(keys)
+        ts_keys = await tailscale.keys()
+        print(ts_keys)
 
-        key_id = keys[0]
+        key_id = list(ts_keys.keys())[0]
         key = await tailscale.get_key(key_id)
         print(key)
 

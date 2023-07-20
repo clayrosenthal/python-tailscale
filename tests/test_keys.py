@@ -1,6 +1,6 @@
 """Asynchronous client for the Tailscale API."""
 # pylint: disable=protected-access
-import asyncio
+# pyright: reportGeneralTypeIssues=false
 import json
 from typing import Dict
 
@@ -22,20 +22,15 @@ test_authkey_1 = {
 }
 
 test_authkeys = {
-    "keys" : [
-        {
-            "id": "kjkdshCNTRL",
-            "description": "information about key"
-        },
-        {
-            "id": "ksdDc5CNTRL"
-        }
+    "keys": [
+        {"id": "kjkdshCNTRL", "description": "information about key"},
+        {"id": "ksdDc5CNTRL"},
     ]
 }
 
 
 @pytest.mark.asyncio
-async def test_key_get(aresponses: ResponsesMockServer):
+async def test_key_get(aresponses: ResponsesMockServer) -> None:
     """Test the get key response handling."""
     aresponses.add(
         "api.tailscale.com",
@@ -53,12 +48,12 @@ async def test_key_get(aresponses: ResponsesMockServer):
         key = await tailscale.get_key("test")
         assert isinstance(key, AuthKey)
         assert key.key_id == "test"
-    
+
     aresponses.assert_plan_strictly_followed()
 
 
 @pytest.mark.asyncio
-async def test_keys_get(aresponses: ResponsesMockServer):
+async def test_keys_get(aresponses: ResponsesMockServer) -> None:
     """Test the list keys response handling."""
     aresponses.add(
         "api.tailscale.com",
@@ -82,7 +77,7 @@ async def test_keys_get(aresponses: ResponsesMockServer):
 
 
 @pytest.mark.asyncio
-async def test_key_delete(aresponses: ResponsesMockServer):
+async def test_key_delete(aresponses: ResponsesMockServer) -> None:
     """Test the delete key response handling."""
     aresponses.add(
         "api.tailscale.com",
@@ -94,7 +89,7 @@ async def test_key_delete(aresponses: ResponsesMockServer):
     )
 
     async with aiohttp.ClientSession() as session:
-        tailscale = Tailscale(tailnet="frenck", api_key="abc", session=session) 
+        tailscale = Tailscale(tailnet="frenck", api_key="abc", session=session)
         assert await tailscale.delete_key("test")
-        
+
     aresponses.assert_plan_strictly_followed()

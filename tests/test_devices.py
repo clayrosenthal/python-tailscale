@@ -1,6 +1,6 @@
 """Asynchronous client for the Tailscale API."""
 # pylint: disable=protected-access
-import asyncio
+# pyright: reportGeneralTypeIssues=false
 import json
 from typing import Dict
 
@@ -10,8 +10,6 @@ from aresponses import ResponsesMockServer
 
 from tailscale import Tailscale
 from tailscale.models import Device
-
-import logging
 
 test_device_1 = {
     "addresses": ["100.71.74.78", "fd7a:115c:a1e0:ac82:4843:ca90:697d:c36e"],
@@ -107,7 +105,7 @@ async def test_device_delete(aresponses: ResponsesMockServer) -> None:
 
 @pytest.mark.asyncio
 async def test_device_authorize(aresponses: ResponsesMockServer) -> None:
-    """Test Device Delete response handling."""
+    """Test Device authorization response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/device/test/authorized",
@@ -117,15 +115,19 @@ async def test_device_authorize(aresponses: ResponsesMockServer) -> None:
             headers={"Content-Type": "application/json"},
             text="{}",
         ),
+        body_pattern='{"authorized": true}',
     )
 
     async with aiohttp.ClientSession() as session:
         tailscale = Tailscale(tailnet="frenck", api_key="abc", session=session)
-        assert await tailscale.authorize_device("test") is None
+        await tailscale.authorize_device("test")
+
+    aresponses.assert_plan_strictly_followed()
 
 
 @pytest.mark.asyncio
-async def test_device_get(aresponses: ResponsesMockServer):
+async def test_device_get(aresponses: ResponsesMockServer) -> None:
+    """Tests getting a device by id response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/device/test",
@@ -143,9 +145,12 @@ async def test_device_get(aresponses: ResponsesMockServer):
         assert isinstance(device, Device)
         assert device.node_id == "test"
 
+    aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
-async def test_devices(aresponses: ResponsesMockServer):
+async def test_devices(aresponses: ResponsesMockServer) -> None:
+    """Tests getting all devices response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/tailnet/frenck/devices",
@@ -164,9 +169,12 @@ async def test_devices(aresponses: ResponsesMockServer):
         assert devices["test"].node_id == "test"
         assert devices["testing"].node_id == "testing"
 
+    aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
-async def test_device_tag_update(aresponses: ResponsesMockServer):
+async def test_device_tag_update(aresponses: ResponsesMockServer) -> None:
+    """Tests updating a device tag response handling."""
     aresponses.add(
         "api.tailscale.com",
         "/api/v2/device/test/tags",
@@ -176,7 +184,7 @@ async def test_device_tag_update(aresponses: ResponsesMockServer):
             headers={"Content-Type": "application/json"},
             text="{}",
         ),
-        body_pattern="{\"tags\": [\"tag:testing\"]}",
+        body_pattern='{"tags": ["tag:testing"]}',
     )
 
     async with aiohttp.ClientSession() as session:
@@ -187,3 +195,5 @@ async def test_device_tag_update(aresponses: ResponsesMockServer):
         )
         posted = await aresponses.history[0].request.read()
         assert posted == b'{"tags": ["tag:testing"]}'
+
+    aresponses.assert_plan_strictly_followed()

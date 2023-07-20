@@ -1,8 +1,10 @@
 """Asynchronous client for the Tailscale API.
-This file tests the basics of the Tailscale class"""
+
+This file tests the basics of the Tailscale class
+"""
 # pylint: disable=protected-access
+# pyright: reportGeneralTypeIssues=false
 import asyncio
-import socket
 
 import aiohttp
 import pytest
@@ -15,12 +17,14 @@ from tailscale.exceptions import (
     TailscaleError,
 )
 
+
 @pytest.mark.asyncio
 async def test_no_access() -> None:
     """Test api key or oauth key is checked correctly."""
     async with Tailscale(tailnet="frenck") as tailscale:
         with pytest.raises(TailscaleAuthenticationError):
             assert await tailscale._request("test")
+
 
 @pytest.mark.asyncio
 async def test_key_from_oauth(aresponses: ResponsesMockServer) -> None:
@@ -46,16 +50,19 @@ async def test_key_from_oauth(aresponses: ResponsesMockServer) -> None:
         ),
     )
     async with aiohttp.ClientSession() as session:
-        tailscale = Tailscale(tailnet="frenck",
-                                oauth_client_id="client", 
-                                oauth_client_secret="notsosecret",
-                                session=session)
+        tailscale = Tailscale(
+            tailnet="frenck",
+            oauth_client_id="client",
+            oauth_client_secret="notsosecret",
+            session=session,
+        )
         await tailscale._request("test")
         second_request = aresponses.history[1].request
-        assert "Basic" in second_request.headers['Authorization']
+        assert "Basic" in second_request.headers["Authorization"]
         await tailscale.close()
 
     aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
 async def test_bad_oauth(aresponses: ResponsesMockServer) -> None:
@@ -72,17 +79,20 @@ async def test_bad_oauth(aresponses: ResponsesMockServer) -> None:
     )
 
     async with aiohttp.ClientSession() as session:
-        tailscale = Tailscale(tailnet="frenck",
-                                oauth_client_id="client", 
-                                oauth_client_secret="notsosecret",
-                                session=session)
+        tailscale = Tailscale(
+            tailnet="frenck",
+            oauth_client_id="client",
+            oauth_client_secret="notsosecret",
+            session=session,
+        )
         with pytest.raises(TailscaleAuthenticationError) as excinfo:
             assert await tailscale._request("test")
             assert excinfo.value.args[0] == "Failed to get OAuth token"
 
         await tailscale.close()
-    
+
     aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
 async def test_json_request(aresponses: ResponsesMockServer) -> None:
@@ -102,7 +112,7 @@ async def test_json_request(aresponses: ResponsesMockServer) -> None:
         response = await tailscale._request("test")
         assert response["status"] == "ok"
         await tailscale.close()
-    
+
     aresponses.assert_plan_strictly_followed()
 
 
@@ -122,7 +132,7 @@ async def test_internal_session(aresponses: ResponsesMockServer) -> None:
     async with Tailscale(tailnet="frenck", api_key="abc") as tailscale:
         response = await tailscale._request("test")
         assert response["status"] == "ok"
-    
+
     aresponses.assert_plan_strictly_followed()
 
 
@@ -143,7 +153,7 @@ async def test_put_request(aresponses: ResponsesMockServer) -> None:
         tailscale = Tailscale(tailnet="frenck", api_key="abc", session=session)
         response = await tailscale._post("test", data={})
         assert response["status"] == "ok"
-    
+
     aresponses.assert_plan_strictly_followed()
 
 
@@ -164,8 +174,9 @@ async def test_timeout(aresponses: ResponsesMockServer) -> None:
         )
         with pytest.raises(TailscaleConnectionError):
             assert await tailscale._request("test")
-    
+
     aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
 async def test_http_error400(aresponses: ResponsesMockServer) -> None:
@@ -184,6 +195,7 @@ async def test_http_error400(aresponses: ResponsesMockServer) -> None:
 
     aresponses.assert_plan_strictly_followed()
 
+
 @pytest.mark.asyncio
 async def test_http_error401(aresponses: ResponsesMockServer) -> None:
     """Test HTTP 401 response handling."""
@@ -201,6 +213,7 @@ async def test_http_error401(aresponses: ResponsesMockServer) -> None:
 
     aresponses.assert_plan_strictly_followed()
 
+
 @pytest.mark.asyncio
 async def test_http_error403(aresponses: ResponsesMockServer) -> None:
     """Test HTTP 403 response handling."""
@@ -217,6 +230,7 @@ async def test_http_error403(aresponses: ResponsesMockServer) -> None:
             assert await tailscale._get("test")
 
     aresponses.assert_plan_strictly_followed()
+
 
 @pytest.mark.asyncio
 async def test_http_delete(aresponses: ResponsesMockServer) -> None:
